@@ -3318,7 +3318,7 @@ class CObject(ObjectDescription[ASTDeclaration]):
             msg = __("Duplicate C declaration, also defined at %s:%s.\n"
                      "Declaration is '.. c:%s:: %s'.")
             msg = msg % (e.symbol.docname, e.symbol.line, self.display_object_type, sig)
-            logger.warning(msg, location=signode)
+            logger.debug(msg, location=signode)
 
         if ast.objectType == 'enumerator':
             self._add_enumerator_to_parent(ast)
