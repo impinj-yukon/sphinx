@@ -88,6 +88,10 @@ class TocTree(SphinxDirective):
         suffixes = self.config.source_suffix
         current_docname = self.env.docname
         glob = toctree['glob']
+        try:
+            only_expr = self.env.metadata['only_expr']
+        except:
+            only_expr = None
 
         # glob target documents
         all_docnames = self.env.found_docs.copy() | generated_docnames
@@ -139,6 +143,9 @@ class TocTree(SphinxDirective):
                 continue
 
             if docname not in frozen_all_docnames:
+                if only_expr:
+                    include_toctree = self.env.app.tags.eval_condition(only_expr)
+
                 if excluded(self.env.doc2path(docname, False)):
                     message = __('toctree contains reference to excluded document %r')
                     subtype = 'excluded'
@@ -146,8 +153,9 @@ class TocTree(SphinxDirective):
                     message = __('toctree contains reference to nonexisting document %r')
                     subtype = 'not_readable'
 
-                logger.warning(message, docname, type='toc', subtype=subtype,
-                               location=toctree)
+                if include_toctree:
+                    logger.warning(message, docname, type='toc', subtype=subtype,
+                                   location=toctree)
                 self.env.note_reread()
                 continue
 
@@ -322,6 +330,7 @@ class Only(SphinxDirective):
         node.document = self.state.document
         self.set_source_info(node)
         node['expr'] = self.arguments[0]
+        self.env.metadata['only_expr'] = node['expr']
 
         # Same as util.nested_parse_with_titles but try to handle nested
         # sections which should be raised higher up the doctree.
@@ -339,6 +348,7 @@ class Only(SphinxDirective):
                     title_styles[0] not in surrounding_title_styles or
                     not self.state.parent):
                 # No nested sections so no special handling needed.
+                self.env.metadata['only_expr'] = ''
                 return [node]
             # Calculate the depths of the current and nested sections.
             current_depth = 0
@@ -358,11 +368,13 @@ class Only(SphinxDirective):
             for _i in range(n_sects_to_raise):
                 if parent.parent:
                     parent = parent.parent
+            self.env.metadata['only_expr'] = ''
             parent.append(node)
             return []
         finally:
             memo.title_styles = surrounding_title_styles
             memo.section_level = surrounding_section_level
+            self.env.metadata['only_expr'] = ''
 
 
 class Include(BaseInclude, SphinxDirective):
